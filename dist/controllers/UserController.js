@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -31,6 +64,8 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const Notifications_1 = require("../entities/Notifications");
 const TransactionHistory_1 = require("../entities/TransactionHistory");
 const constant_1 = __importDefault(require("../utils/constant"));
+const uuid_1 = require("uuid"); // For generating a unique user code
+const QRCode = __importStar(require("qrcode"));
 // Secret for JWT
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Replace with a strong secret key
 // Generate JWT token
@@ -54,8 +89,8 @@ const signIn = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(404).json({ message: "User not found" });
         }
         // Check password
-        if (password && user.password && typeof password === "string") {
-            const isPasswordValid = yield bcryptjs_1.default.compare(password, user.password);
+        if (password && user.pin_number && typeof password === "string") {
+            const isPasswordValid = yield bcryptjs_1.default.compare(password, user.pin_number);
             if (!isPasswordValid) {
                 return res.status(401).json({ message: "Invalid password" });
             }
@@ -65,7 +100,7 @@ const signIn = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         const token = generateToken(user.id);
         // Remove password
-        const { password: _ } = user, userWithoutPassword = __rest(user, ["password"]);
+        const { pin_number: _ } = user, userWithoutPassword = __rest(user, ["pin_number"]);
         // Add full image URL (if available)
         const imageUrl = user.image ? `${constant_1.default}/uploads/${user.image}` : null;
         return res.status(200).json({
@@ -117,9 +152,9 @@ exports.forgotPassword = forgotPassword;
 // Create a new user
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
-    const { full_name, password, email, phone_no, birth_date, accepted_terms, accepted_terms_time, } = req.body;
+    const { full_name, pin_number, email, phone_no, birth_date, accepted_terms, accepted_terms_time, nid_card_number, nid_card_front_pic_url, nid_card_back_pic_url, } = req.body;
     // Validate the request body
-    if (!full_name || !password || !email || !phone_no) {
+    if (!full_name || !pin_number || !email || !phone_no) {
         return res.status(400).json({ message: "Required fields are missing." });
     }
     try {
@@ -132,19 +167,44 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 message: "Email or phone number already in use.",
             });
         }
-        const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
+        const hashedPassword = yield bcryptjs_1.default.hash(pin_number, 10);
+        // Generate unique user code
+        const user_code = (0, uuid_1.v4)(); // Or any other unique code generator logic
+        // Optional: Generate a QR code from the user code (can be saved as a URL)
+        const qr_code = yield QRCode.toDataURL(user_code);
         const newUser = new User_1.User();
         newUser.full_name = full_name;
-        newUser.password = hashedPassword;
+        newUser.pin_number = hashedPassword;
         newUser.email = email;
         newUser.phone_no = phone_no;
         newUser.birth_date = new Date(birth_date);
         newUser.accepted_terms = accepted_terms !== null && accepted_terms !== void 0 ? accepted_terms : false;
         newUser.accepted_terms_time = new Date(accepted_terms_time);
-        // Handle uploaded image (if present)
-        if (req.file) {
-            // Save the full image URL in the database instead of just the filename
-            newUser.image = req.file.filename;
+        newUser.user_code = user_code;
+        newUser.qr_code = qr_code; // Save the QR code data URL
+        // Handle NID card details
+        if (nid_card_number)
+            newUser.nid_card_number = nid_card_number;
+        if (nid_card_front_pic_url)
+            newUser.nid_card_front_pic_url = nid_card_front_pic_url;
+        if (nid_card_back_pic_url)
+            newUser.nid_card_back_pic_url = nid_card_back_pic_url;
+        // Handle uploaded images
+        // Handle uploaded images
+        if (req.files) {
+            const files = req.files;
+            if (files["image"]) {
+                const imageFile = files["image"][0];
+                newUser.image = `${constant_1.default}/uploads/${imageFile.filename}`; // Full URL for image
+            }
+            if (files["nid_card_front"]) {
+                const nidFrontPicFile = files["nid_card_front"][0];
+                newUser.nid_card_front_pic_url = `${constant_1.default}/uploads/${nidFrontPicFile.filename}`; // Full URL for NID front image
+            }
+            if (files["nid_card_back"]) {
+                const nidBackPicFile = files["nid_card_back"][0];
+                newUser.nid_card_back_pic_url = `${constant_1.default}/uploads/${nidBackPicFile.filename}`; // Full URL for NID back image
+            }
         }
         yield userRepo.save(newUser);
         // ✅ Generate full image URL only for response
@@ -152,7 +212,7 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             ? `${constant_1.default}/uploads/${newUser.image}`
             : null;
         // Remove password field before returning
-        const { password: _ } = newUser, userWithoutPassword = __rest(newUser, ["password"]);
+        const { pin_number: _ } = newUser, userWithoutPassword = __rest(newUser, ["pin_number"]);
         return res.status(201).json({
             success: true,
             message: "User created successfully",
@@ -173,7 +233,7 @@ exports.createUser = createUser;
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
-    const { full_name, password, email, phone_no, accepted_terms, accepted_terms_time, city, country, state, zip_code, latitude, longitude, institution_name, birth_date, address, total_prize_money_received, } = req.body;
+    const { full_name, pin_number, email, phone_no, accepted_terms, accepted_terms_time, city, country, state, zip_code, latitude, longitude, institution_name, birth_date, address, total_prize_money_received, } = req.body;
     if (!id || parseInt(id) !== ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
         return res.status(400).json({
             success: false,
@@ -212,11 +272,10 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         user.institution_name = institution_name || user.institution_name;
         user.birth_date = birth_date ? new Date(birth_date) : user.birth_date;
         user.address = address || user.address;
-        user.total_prize_money_received =
-            total_prize_money_received || user.total_prize_money_received;
+        user.tcoin_balance = total_prize_money_received || user.tcoin_balance;
         // Update password if provided
-        if (password) {
-            user.password = yield bcryptjs_1.default.hash(password, 10);
+        if (pin_number) {
+            user.pin_number = yield bcryptjs_1.default.hash(pin_number, 10);
         }
         // Handle image upload if a new image was sent
         if (req.file) {
@@ -229,7 +288,7 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             ? `${constant_1.default}/uploads/${updatedUser.image}`
             : null;
         // Exclude password before returning
-        const { password: _ } = updatedUser, userWithoutPassword = __rest(updatedUser, ["password"]);
+        const { pin_number: _ } = updatedUser, userWithoutPassword = __rest(updatedUser, ["pin_number"]);
         return res.status(200).json({
             success: true,
             message: "User updated successfully",
@@ -253,7 +312,7 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const users = yield userRepo.find();
         // Exclude password and include image URL for each user
         const usersWithoutPassword = users.map((user) => {
-            const { password } = user, userWithoutPassword = __rest(user, ["password"]); // Remove password
+            const { pin_number } = user, userWithoutPassword = __rest(user, ["pin_number"]); // Remove password
             // Add image URL if available
             const imageUrl = user.image ? `${constant_1.default}/uploads/${user.image}` : null;
             return Object.assign(Object.assign({}, userWithoutPassword), { image: imageUrl });
@@ -288,7 +347,7 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             });
         }
         // Exclude password and generate full image URL
-        const { password } = user, userWithoutPassword = __rest(user, ["password"]);
+        const { pin_number } = user, userWithoutPassword = __rest(user, ["pin_number"]);
         const imageUrl = user.image ? `${constant_1.default}/uploads/${user.image}` : null;
         return res.status(200).json({
             success: true,
@@ -357,7 +416,7 @@ const getUserBalance = (req, res) => __awaiter(void 0, void 0, void 0, function*
             success: true,
             message: "User balance fetched successfully.",
             data: {
-                balance: user.total_prize_money_received || 0, // Handle case if the balance is null
+                balance: user.tcoin_balance || 0, // Handle case if the balance is null
             },
         });
     }
@@ -437,8 +496,7 @@ const withdrawMoney = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             });
         }
         // Check if the user has enough prize money for the withdrawal
-        if (user.total_prize_money_received &&
-            user.total_prize_money_received < amount) {
+        if (user.tcoin_balance && user.tcoin_balance < amount) {
             return res.status(400).json({
                 success: false,
                 message: "Insufficient funds.",
@@ -517,19 +575,19 @@ const adminApproveWithdrawal = (req, res) => __awaiter(void 0, void 0, void 0, f
         // Round both the user's prize money and the withdrawal amount to 2 decimal places to avoid precision issues
         let userPrizeMoney = 0;
         let withdrawalAmount = 0;
-        if (user.total_prize_money_received)
-            userPrizeMoney = Math.round(user.total_prize_money_received * 100) / 100;
+        if (user.tcoin_balance)
+            userPrizeMoney = Math.round(user.tcoin_balance * 100) / 100;
         withdrawalAmount = Math.round(transaction.amount * 100) / 100;
         // Debug: Check the values after rounding
         console.log("Rounded User's total prize money:", userPrizeMoney);
         console.log("Rounded Requested withdrawal amount:", withdrawalAmount);
         // Ensure the user has enough prize money for the withdrawal
         console.log(`Checking if user has enough prize money: ${userPrizeMoney} >= ${withdrawalAmount}`);
-        if (user.total_prize_money_received && userPrizeMoney >= withdrawalAmount) {
+        if (user.tcoin_balance && userPrizeMoney >= withdrawalAmount) {
             // Adjust the user's total prize money and withdrawal amounts
-            user.total_prize_money_received -= withdrawalAmount; // Deduct the prize money
-            user.total_withdrawal =
-                Math.round(user.total_withdrawal || 0) + withdrawalAmount; // Add to withdrawal total
+            user.tcoin_balance -= withdrawalAmount; // Deduct the prize money
+            user.tcoin_withdrawal =
+                Math.round(user.tcoin_withdrawal || 0) + withdrawalAmount; // Add to withdrawal total
             // Set the transaction status to 'Completed'
             transaction.transaction_status = "Completed";
             transaction.updatedAt = new Date(); // Set updated timestamp
@@ -544,8 +602,8 @@ const adminApproveWithdrawal = (req, res) => __awaiter(void 0, void 0, void 0, f
                 data: {
                     transactionId: transaction.id,
                     withdrawalAmount: withdrawalAmount,
-                    updatedUserBalance: user.total_prize_money_received,
-                    updatedUserWithdrawalTotal: user.total_withdrawal,
+                    updatedUserBalance: user.tcoin_balance,
+                    updatedUserWithdrawalTotal: user.tcoin_withdrawal,
                 },
             });
         }

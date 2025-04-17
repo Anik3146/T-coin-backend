@@ -44,6 +44,12 @@ router.post("/forgot-password", (req, res) => __awaiter(void 0, void 0, void 0, 
 // Create User route
 router.post("/", MulterConfig_1.upload.single("image"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        // Ensure req.file is properly typed as Multer file
+        const { file } = req;
+        if (file) {
+            // If file is uploaded, you can access it as `file.filename` or `file.path`
+            console.log("File uploaded:", file.filename);
+        }
         // Call the createUser function (which will handle the logic, including saving the user and image)
         yield (0, UserController_1.createUser)(req, res);
     }
@@ -53,12 +59,21 @@ router.post("/", MulterConfig_1.upload.single("image"), (req, res) => __awaiter(
     }
 }));
 // Update User route
-router.put("/:id", Authentication_1.authenticateToken, MulterConfig_1.upload.single("image"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put("/:id", Authentication_1.authenticateToken, // Assuming you have a token authentication middleware
+MulterConfig_1.upload.single("image"), // Only handle single file upload for 'image' field
+(req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // Using 'any' here, but you can type it more strictly if needed
     try {
         const { id } = req.params;
         // Ensure the logged-in user is the same as the user being updated
         if (Number(id) !== req.user.id) {
             return res.status(403).json({ message: "Unauthorized access." });
+        }
+        // Ensure req.file is properly typed as Multer file
+        const { file } = req;
+        if (file) {
+            // If file is uploaded, you can access it as `file.filename` or `file.path`
+            console.log("File uploaded:", file.filename);
         }
         // Call the updateUser function after multer has handled the file upload
         yield (0, UserController_1.updateUser)(req, res);

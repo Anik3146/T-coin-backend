@@ -31,7 +31,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
-], User.prototype, "password", void 0);
+], User.prototype, "pin_number", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
@@ -111,11 +111,11 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)("decimal", { precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
-], User.prototype, "total_prize_money_received", void 0);
+], User.prototype, "tcoin_balance", void 0);
 __decorate([
     (0, typeorm_1.Column)("decimal", { precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
-], User.prototype, "total_withdrawal", void 0);
+], User.prototype, "tcoin_withdrawal", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
@@ -124,6 +124,30 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "image", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "user_code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "qr_code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "passport_file_url", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "nid_card_number", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "nid_card_front_pic_url", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "nid_card_back_pic_url", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

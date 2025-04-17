@@ -1,1 +1,19 @@
-node_modules
+# Node.js dependencies
+node_modules/
+
+# Firebase service account credentials (don't commit these!)
+firebase-service-account.json
+
+# Log files
+*.log
+
+# Environment files
+.env
+
+# Build output
+dist/
+build/
+
+# OS generated files (e.g., .DS_Store on macOS)
+.DS_Store
+Thumbs.db

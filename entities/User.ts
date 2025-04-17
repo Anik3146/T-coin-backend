@@ -27,7 +27,7 @@ export class User {
   full_name?: string;
 
   @Column({ nullable: true })
-  password?: string;
+  pin_number?: string; // Pin number instead of password
 
   @Column({ nullable: true })
   email?: string;
@@ -90,16 +90,34 @@ export class User {
   notifications?: Notification[];
 
   @Column("decimal", { precision: 10, scale: 2, nullable: true })
-  total_prize_money_received?: number;
+  tcoin_balance?: number; // T-Coin balance (replaces prize money)
 
   @Column("decimal", { precision: 10, scale: 2, nullable: true })
-  total_withdrawal?: number;
+  tcoin_withdrawal?: number; // T-Coin withdrawal amount (replaces withdrawal)
 
   @Column({ nullable: true })
   deviceToken?: string;
 
   @Column({ nullable: true })
   image?: string;
+
+  @Column({ nullable: true })
+  user_code?: string; // Unique user code
+
+  @Column({ nullable: true })
+  qr_code?: string; // URL or data of the QR code
+
+  @Column({ nullable: true })
+  passport_file_url?: string; // Passport file URL
+
+  @Column({ nullable: true })
+  nid_card_number?: string; // NID card number
+
+  @Column({ nullable: true })
+  nid_card_front_pic_url?: string; // NID card front pic URL
+
+  @Column({ nullable: true })
+  nid_card_back_pic_url?: string; // NID card back pic URL
 
   @CreateDateColumn()
   createdAt?: Date;

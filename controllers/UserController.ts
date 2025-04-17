@@ -7,6 +7,8 @@ import { authenticateToken } from "../middleware/Authentication";
 import { Notification } from "../entities/Notifications";
 import { TransactionHistory } from "../entities/TransactionHistory";
 import baseUrl from "../utils/constant";
+import { v4 as uuidv4 } from "uuid"; // For generating a unique user code
+import * as QRCode from "qrcode";
 
 // Secret for JWT
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Replace with a strong secret key
@@ -41,8 +43,8 @@ export const signIn = async (
     }
 
     // Check password
-    if (password && user.password && typeof password === "string") {
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (password && user.pin_number && typeof password === "string") {
+      const isPasswordValid = await bcrypt.compare(password, user.pin_number);
 
       if (!isPasswordValid) {
         return res.status(401).json({ message: "Invalid password" });
@@ -54,7 +56,7 @@ export const signIn = async (
     const token = generateToken(user.id);
 
     // Remove password
-    const { password: _, ...userWithoutPassword } = user;
+    const { pin_number: _, ...userWithoutPassword } = user;
 
     // Add full image URL (if available)
     const imageUrl = user.image ? `${baseUrl}/uploads/${user.image}` : null;
@@ -124,16 +126,19 @@ export const createUser = async (
 
   const {
     full_name,
-    password,
+    pin_number,
     email,
     phone_no,
     birth_date,
     accepted_terms,
     accepted_terms_time,
+    nid_card_number,
+    nid_card_front_pic_url,
+    nid_card_back_pic_url,
   } = req.body;
 
   // Validate the request body
-  if (!full_name || !password || !email || !phone_no) {
+  if (!full_name || !pin_number || !email || !phone_no) {
     return res.status(400).json({ message: "Required fields are missing." });
   }
 
@@ -149,21 +154,49 @@ export const createUser = async (
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(pin_number, 10);
+
+    // Generate unique user code
+    const user_code = uuidv4(); // Or any other unique code generator logic
+
+    // Optional: Generate a QR code from the user code (can be saved as a URL)
+    const qr_code = await QRCode.toDataURL(user_code);
 
     const newUser = new User();
     newUser.full_name = full_name;
-    newUser.password = hashedPassword;
+    newUser.pin_number = hashedPassword;
     newUser.email = email;
     newUser.phone_no = phone_no;
     newUser.birth_date = new Date(birth_date);
     newUser.accepted_terms = accepted_terms ?? false;
     newUser.accepted_terms_time = new Date(accepted_terms_time);
+    newUser.user_code = user_code;
+    newUser.qr_code = qr_code; // Save the QR code data URL
 
-    // Handle uploaded image (if present)
-    if (req.file) {
-      // Save the full image URL in the database instead of just the filename
-      newUser.image = req.file.filename;
+    // Handle NID card details
+    if (nid_card_number) newUser.nid_card_number = nid_card_number;
+    if (nid_card_front_pic_url)
+      newUser.nid_card_front_pic_url = nid_card_front_pic_url;
+    if (nid_card_back_pic_url)
+      newUser.nid_card_back_pic_url = nid_card_back_pic_url;
+
+    // Handle uploaded images
+    // Handle uploaded images
+    if (req.files) {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+      if (files["image"]) {
+        const imageFile = files["image"][0];
+        newUser.image = `${baseUrl}/uploads/${imageFile.filename}`; // Full URL for image
+      }
+      if (files["nid_card_front"]) {
+        const nidFrontPicFile = files["nid_card_front"][0];
+        newUser.nid_card_front_pic_url = `${baseUrl}/uploads/${nidFrontPicFile.filename}`; // Full URL for NID front image
+      }
+      if (files["nid_card_back"]) {
+        const nidBackPicFile = files["nid_card_back"][0];
+        newUser.nid_card_back_pic_url = `${baseUrl}/uploads/${nidBackPicFile.filename}`; // Full URL for NID back image
+      }
     }
 
     await userRepo.save(newUser);
@@ -174,7 +207,7 @@ export const createUser = async (
       : null;
 
     // Remove password field before returning
-    const { password: _, ...userWithoutPassword } = newUser;
+    const { pin_number: _, ...userWithoutPassword } = newUser;
 
     return res.status(201).json({
       success: true,
@@ -199,7 +232,7 @@ export const updateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
   const {
     full_name,
-    password,
+    pin_number,
     email,
     phone_no,
     accepted_terms,
@@ -258,12 +291,11 @@ export const updateUser = async (req: Request, res: Response) => {
     user.institution_name = institution_name || user.institution_name;
     user.birth_date = birth_date ? new Date(birth_date) : user.birth_date;
     user.address = address || user.address;
-    user.total_prize_money_received =
-      total_prize_money_received || user.total_prize_money_received;
+    user.tcoin_balance = total_prize_money_received || user.tcoin_balance;
 
     // Update password if provided
-    if (password) {
-      user.password = await bcrypt.hash(password, 10);
+    if (pin_number) {
+      user.pin_number = await bcrypt.hash(pin_number, 10);
     }
 
     // Handle image upload if a new image was sent
@@ -280,7 +312,7 @@ export const updateUser = async (req: Request, res: Response) => {
       : null;
 
     // Exclude password before returning
-    const { password: _, ...userWithoutPassword } = updatedUser;
+    const { pin_number: _, ...userWithoutPassword } = updatedUser;
 
     return res.status(200).json({
       success: true,
@@ -313,7 +345,7 @@ export const getUsers = async (
 
     // Exclude password and include image URL for each user
     const usersWithoutPassword = users.map((user) => {
-      const { password, ...userWithoutPassword } = user; // Remove password
+      const { pin_number, ...userWithoutPassword } = user; // Remove password
       // Add image URL if available
       const imageUrl = user.image ? `${baseUrl}/uploads/${user.image}` : null;
       return {
@@ -357,7 +389,7 @@ export const getUserById = async (
     }
 
     // Exclude password and generate full image URL
-    const { password, ...userWithoutPassword } = user;
+    const { pin_number, ...userWithoutPassword } = user;
     const imageUrl = user.image ? `${baseUrl}/uploads/${user.image}` : null;
 
     return res.status(200).json({
@@ -438,7 +470,7 @@ export const getUserBalance = async (req: Request, res: Response) => {
       success: true,
       message: "User balance fetched successfully.",
       data: {
-        balance: user.total_prize_money_received || 0, // Handle case if the balance is null
+        balance: user.tcoin_balance || 0, // Handle case if the balance is null
       },
     });
   } catch (error) {
@@ -533,10 +565,7 @@ export const withdrawMoney = async (
     }
 
     // Check if the user has enough prize money for the withdrawal
-    if (
-      user.total_prize_money_received &&
-      user.total_prize_money_received < amount
-    ) {
+    if (user.tcoin_balance && user.tcoin_balance < amount) {
       return res.status(400).json({
         success: false,
         message: "Insufficient funds.",
@@ -628,8 +657,8 @@ export const adminApproveWithdrawal = async (
     // Round both the user's prize money and the withdrawal amount to 2 decimal places to avoid precision issues
     let userPrizeMoney = 0;
     let withdrawalAmount = 0;
-    if (user.total_prize_money_received)
-      userPrizeMoney = Math.round(user.total_prize_money_received * 100) / 100;
+    if (user.tcoin_balance)
+      userPrizeMoney = Math.round(user.tcoin_balance * 100) / 100;
     withdrawalAmount = Math.round(transaction.amount * 100) / 100;
 
     // Debug: Check the values after rounding
@@ -641,11 +670,11 @@ export const adminApproveWithdrawal = async (
       `Checking if user has enough prize money: ${userPrizeMoney} >= ${withdrawalAmount}`
     );
 
-    if (user.total_prize_money_received && userPrizeMoney >= withdrawalAmount) {
+    if (user.tcoin_balance && userPrizeMoney >= withdrawalAmount) {
       // Adjust the user's total prize money and withdrawal amounts
-      user.total_prize_money_received -= withdrawalAmount; // Deduct the prize money
-      user.total_withdrawal =
-        Math.round(user.total_withdrawal || 0) + withdrawalAmount; // Add to withdrawal total
+      user.tcoin_balance -= withdrawalAmount; // Deduct the prize money
+      user.tcoin_withdrawal =
+        Math.round(user.tcoin_withdrawal || 0) + withdrawalAmount; // Add to withdrawal total
 
       // Set the transaction status to 'Completed'
       transaction.transaction_status = "Completed";
@@ -663,8 +692,8 @@ export const adminApproveWithdrawal = async (
         data: {
           transactionId: transaction.id,
           withdrawalAmount: withdrawalAmount,
-          updatedUserBalance: user.total_prize_money_received,
-          updatedUserWithdrawalTotal: user.total_withdrawal,
+          updatedUserBalance: user.tcoin_balance,
+          updatedUserWithdrawalTotal: user.tcoin_withdrawal,
         },
       });
     } else {
