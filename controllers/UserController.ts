@@ -9,6 +9,8 @@ import { TransactionHistory } from "../entities/TransactionHistory";
 import baseUrl from "../utils/constant";
 import { v4 as uuidv4 } from "uuid"; // For generating a unique user code
 import * as QRCode from "qrcode";
+import path from "path";
+import fs from "fs";
 
 // Secret for JWT
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Replace with a strong secret key
@@ -133,8 +135,6 @@ export const createUser = async (
     accepted_terms,
     accepted_terms_time,
     nid_card_number,
-    nid_card_front_pic_url,
-    nid_card_back_pic_url,
   } = req.body;
 
   // Validate the request body
@@ -156,12 +156,7 @@ export const createUser = async (
 
     const hashedPassword = await bcrypt.hash(pin_number, 10);
 
-    // Generate unique user code
-    const user_code = uuidv4(); // Or any other unique code generator logic
-
-    // Optional: Generate a QR code from the user code (can be saved as a URL)
-    const qr_code = await QRCode.toDataURL(user_code);
-
+    // Create a new user object
     const newUser = new User();
     newUser.full_name = full_name;
     newUser.pin_number = hashedPassword;
@@ -170,17 +165,13 @@ export const createUser = async (
     newUser.birth_date = new Date(birth_date);
     newUser.accepted_terms = accepted_terms ?? false;
     newUser.accepted_terms_time = new Date(accepted_terms_time);
-    newUser.user_code = user_code;
-    newUser.qr_code = qr_code; // Save the QR code data URL
+
+    // Generate a unique user code (UUID)
+    newUser.user_code = uuidv4(); // Unique user code
 
     // Handle NID card details
     if (nid_card_number) newUser.nid_card_number = nid_card_number;
-    if (nid_card_front_pic_url)
-      newUser.nid_card_front_pic_url = nid_card_front_pic_url;
-    if (nid_card_back_pic_url)
-      newUser.nid_card_back_pic_url = nid_card_back_pic_url;
 
-    // Handle uploaded images
     // Handle uploaded images
     if (req.files) {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -197,14 +188,45 @@ export const createUser = async (
         const nidBackPicFile = files["nid_card_back"][0];
         newUser.nid_card_back_pic_url = `${baseUrl}/uploads/${nidBackPicFile.filename}`; // Full URL for NID back image
       }
+
+      if (files["passport"]) {
+        const passportPdfFile = files["passport"][0];
+        newUser.passport_file_url = `${baseUrl}/uploads/${passportPdfFile.filename}`; // Full URL for the passport PDF
+      }
     }
 
+    // Save the user first to ensure the user.id is populated
     await userRepo.save(newUser);
 
-    // ✅ Generate full image URL only for response
-    const imagePath = newUser.image
-      ? `${baseUrl}/uploads/${newUser.image}`
-      : null;
+    // Now that the user is saved and `id` is available, generate the QR code URL
+    const userUrl = `${baseUrl}/users/${newUser.id}`;
+
+    // Resolve the path to the root folder using path.resolve
+    // Use path.resolve to get the correct root directory
+    const uploadsDir = path.resolve(__dirname, "../../uploads"); // Go back 2 directories to reach the root folder
+
+    // Log the uploads directory for debugging purposes
+    console.log("Uploads Directory Path:", uploadsDir);
+
+    // Path for saving the QR code image directly in the 'uploads' folder
+    const qrCodePath = path.join(uploadsDir, `${newUser.id}-qrcode.png`);
+
+    // Log the QR Code path for debugging purposes
+    console.log("QR Code Path:", qrCodePath);
+
+    // Ensure the 'uploads' folder exists
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Generate the QR code and save it to the 'uploads' folder
+    await QRCode.toFile(qrCodePath, userUrl);
+
+    // Save the QR code image path to the user's profile (relative path)
+    newUser.qr_code = `${baseUrl}/uploads/${newUser.id}-qrcode.png`;
+
+    // Save the user again to the database
+    await userRepo.save(newUser);
 
     // Remove password field before returning
     const { pin_number: _, ...userWithoutPassword } = newUser;
@@ -214,7 +236,7 @@ export const createUser = async (
       message: "User created successfully",
       data: {
         ...userWithoutPassword,
-        image: imagePath,
+        qr_code: newUser.qr_code, // The URL to the saved QR code image
       },
     });
   } catch (error) {

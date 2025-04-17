@@ -66,6 +66,8 @@ const TransactionHistory_1 = require("../entities/TransactionHistory");
 const constant_1 = __importDefault(require("../utils/constant"));
 const uuid_1 = require("uuid"); // For generating a unique user code
 const QRCode = __importStar(require("qrcode"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 // Secret for JWT
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Replace with a strong secret key
 // Generate JWT token
@@ -152,7 +154,7 @@ exports.forgotPassword = forgotPassword;
 // Create a new user
 const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
-    const { full_name, pin_number, email, phone_no, birth_date, accepted_terms, accepted_terms_time, nid_card_number, nid_card_front_pic_url, nid_card_back_pic_url, } = req.body;
+    const { full_name, pin_number, email, phone_no, birth_date, accepted_terms, accepted_terms_time, nid_card_number, } = req.body;
     // Validate the request body
     if (!full_name || !pin_number || !email || !phone_no) {
         return res.status(400).json({ message: "Required fields are missing." });
@@ -168,10 +170,7 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             });
         }
         const hashedPassword = yield bcryptjs_1.default.hash(pin_number, 10);
-        // Generate unique user code
-        const user_code = (0, uuid_1.v4)(); // Or any other unique code generator logic
-        // Optional: Generate a QR code from the user code (can be saved as a URL)
-        const qr_code = yield QRCode.toDataURL(user_code);
+        // Create a new user object
         const newUser = new User_1.User();
         newUser.full_name = full_name;
         newUser.pin_number = hashedPassword;
@@ -180,16 +179,11 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         newUser.birth_date = new Date(birth_date);
         newUser.accepted_terms = accepted_terms !== null && accepted_terms !== void 0 ? accepted_terms : false;
         newUser.accepted_terms_time = new Date(accepted_terms_time);
-        newUser.user_code = user_code;
-        newUser.qr_code = qr_code; // Save the QR code data URL
+        // Generate a unique user code (UUID)
+        newUser.user_code = (0, uuid_1.v4)(); // Unique user code
         // Handle NID card details
         if (nid_card_number)
             newUser.nid_card_number = nid_card_number;
-        if (nid_card_front_pic_url)
-            newUser.nid_card_front_pic_url = nid_card_front_pic_url;
-        if (nid_card_back_pic_url)
-            newUser.nid_card_back_pic_url = nid_card_back_pic_url;
-        // Handle uploaded images
         // Handle uploaded images
         if (req.files) {
             const files = req.files;
@@ -205,18 +199,40 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 const nidBackPicFile = files["nid_card_back"][0];
                 newUser.nid_card_back_pic_url = `${constant_1.default}/uploads/${nidBackPicFile.filename}`; // Full URL for NID back image
             }
+            if (files["passport"]) {
+                const passportPdfFile = files["passport"][0];
+                newUser.passport_file_url = `${constant_1.default}/uploads/${passportPdfFile.filename}`; // Full URL for the passport PDF
+            }
         }
+        // Save the user first to ensure the user.id is populated
         yield userRepo.save(newUser);
-        // ✅ Generate full image URL only for response
-        const imagePath = newUser.image
-            ? `${constant_1.default}/uploads/${newUser.image}`
-            : null;
+        // Now that the user is saved and `id` is available, generate the QR code URL
+        const userUrl = `${constant_1.default}/users/${newUser.id}`;
+        // Resolve the path to the root folder using path.resolve
+        // Use path.resolve to get the correct root directory
+        const uploadsDir = path_1.default.resolve(__dirname, "../../uploads"); // Go back 2 directories to reach the root folder
+        // Log the uploads directory for debugging purposes
+        console.log("Uploads Directory Path:", uploadsDir);
+        // Path for saving the QR code image directly in the 'uploads' folder
+        const qrCodePath = path_1.default.join(uploadsDir, `${newUser.id}-qrcode.png`);
+        // Log the QR Code path for debugging purposes
+        console.log("QR Code Path:", qrCodePath);
+        // Ensure the 'uploads' folder exists
+        if (!fs_1.default.existsSync(uploadsDir)) {
+            fs_1.default.mkdirSync(uploadsDir, { recursive: true });
+        }
+        // Generate the QR code and save it to the 'uploads' folder
+        yield QRCode.toFile(qrCodePath, userUrl);
+        // Save the QR code image path to the user's profile (relative path)
+        newUser.qr_code = `${constant_1.default}/uploads/${newUser.id}-qrcode.png`;
+        // Save the user again to the database
+        yield userRepo.save(newUser);
         // Remove password field before returning
         const { pin_number: _ } = newUser, userWithoutPassword = __rest(newUser, ["pin_number"]);
         return res.status(201).json({
             success: true,
             message: "User created successfully",
-            data: Object.assign(Object.assign({}, userWithoutPassword), { image: imagePath }),
+            data: Object.assign(Object.assign({}, userWithoutPassword), { qr_code: newUser.qr_code }),
         });
     }
     catch (error) {

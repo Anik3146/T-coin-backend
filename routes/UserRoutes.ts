@@ -58,6 +58,28 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
+router.post(
+  "/with-multiple-files",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "nid_card_front", maxCount: 1 },
+    { name: "nid_card_back", maxCount: 1 },
+    { name: "passport", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      // Handle the uploaded files
+      console.log("Files uploaded:", req.files);
+
+      // Call your user creation logic here
+      await createUser(req, res);
+    } catch (error) {
+      console.error("Error in creating user with multiple files:", error);
+      res.status(500).json({ message: "An unexpected error occurred." });
+    }
+  }
+);
+
 // Update User route
 router.put(
   "/:id",

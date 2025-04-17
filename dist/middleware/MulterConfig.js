@@ -16,6 +16,9 @@ const storage = multer_1.default.diskStorage({
         cb(null, Date.now() + ext); // Rename the file to be unique
     },
 });
-// Initialize multer with the storage engine
-const upload = (0, multer_1.default)({ storage: storage });
+// Initialize multer with the storage engine (no file validation, allowing all types)
+const upload = (0, multer_1.default)({
+    storage: storage,
+    // No file validation, so no fileFilter or limits are applied
+});
 exports.upload = upload;

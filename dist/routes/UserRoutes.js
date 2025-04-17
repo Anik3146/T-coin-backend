@@ -58,6 +58,23 @@ router.post("/", MulterConfig_1.upload.single("image"), (req, res) => __awaiter(
         res.status(500).json({ message: "An unexpected error occurred." });
     }
 }));
+router.post("/with-multiple-files", MulterConfig_1.upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "nid_card_front", maxCount: 1 },
+    { name: "nid_card_back", maxCount: 1 },
+    { name: "passport", maxCount: 1 },
+]), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Handle the uploaded files
+        console.log("Files uploaded:", req.files);
+        // Call your user creation logic here
+        yield (0, UserController_1.createUser)(req, res);
+    }
+    catch (error) {
+        console.error("Error in creating user with multiple files:", error);
+        res.status(500).json({ message: "An unexpected error occurred." });
+    }
+}));
 // Update User route
 router.put("/:id", Authentication_1.authenticateToken, // Assuming you have a token authentication middleware
 MulterConfig_1.upload.single("image"), // Only handle single file upload for 'image' field

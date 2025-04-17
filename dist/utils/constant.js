@@ -7,5 +7,5 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const baseUrl = process.env.NODE_ENV === "production"
     ? process.env.BASE_URL
-    : "http://localhost:5001";
+    : "http://localhost:5002";
 exports.default = baseUrl;

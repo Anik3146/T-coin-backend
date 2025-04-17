@@ -39,7 +39,7 @@ app.use("/api/breaking-news", BreakingNewsRoutes_1.default);
 // // Serve static files (e.g., images) from the 'uploads' directory
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
 // Start the server
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

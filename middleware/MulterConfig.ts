@@ -12,7 +12,10 @@ const storage = multer.diskStorage({
   },
 });
 
-// Initialize multer with the storage engine
-const upload = multer({ storage: storage });
+// Initialize multer with the storage engine (no file validation, allowing all types)
+const upload = multer({
+  storage: storage,
+  // No file validation, so no fileFilter or limits are applied
+});
 
 export { upload };
