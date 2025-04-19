@@ -49,6 +49,11 @@ const Notifications_1 = require("./entities/Notifications");
 const BreakingNews_1 = require("./entities/BreakingNews");
 const Agent_1 = require("./entities/Agent");
 const Admin_1 = require("./entities/Admin");
+const Savings_1 = require("./entities/Savings");
+const Investment_1 = require("./entities/Investment");
+const InvestmentProject_1 = require("./entities/InvestmentProject");
+const MFSservice_1 = require("./entities/MFSservice");
+const Referral_1 = require("./entities/Referral");
 // Add other entities as required
 dotenv.config();
 exports.AppDataSource = new typeorm_1.DataSource({
@@ -71,6 +76,11 @@ exports.AppDataSource = new typeorm_1.DataSource({
         BreakingNews_1.BreakingNews,
         Agent_1.Agent,
         Admin_1.Admin,
+        Savings_1.Savings,
+        Investment_1.Investment,
+        InvestmentProject_1.InvestmentProject,
+        MFSservice_1.MFSService,
+        Referral_1.Referral,
     ], // Include all entities
     synchronize: true,
     logging: true,

@@ -16,6 +16,9 @@ import { DeviceInfo } from "./DeviceInfo";
 import { AppInfo } from "./AppInfo";
 import { TransactionHistory } from "./TransactionHistory";
 import { Notification } from "./Notifications";
+import { Referral } from "./Referral";
+import { Investment } from "./Investment";
+import { Savings } from "./Savings";
 
 @Unique(["email", "phone_no"])
 @Entity()
@@ -118,6 +121,15 @@ export class User {
 
   @Column({ nullable: true })
   nid_card_back_pic_url?: string; // NID card back pic URL
+
+  @OneToMany(() => Referral, (referral) => referral.used_by_user_id)
+  referrals?: Referral[];
+
+  @OneToMany(() => Investment, (investment) => investment.investor)
+  investments?: Investment[];
+
+  @OneToMany(() => Savings, (savings) => savings.user)
+  savings?: Savings[];
 
   @CreateDateColumn()
   createdAt?: Date;

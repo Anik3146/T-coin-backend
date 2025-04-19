@@ -17,6 +17,9 @@ const DeviceInfo_1 = require("./DeviceInfo");
 const AppInfo_1 = require("./AppInfo");
 const TransactionHistory_1 = require("./TransactionHistory");
 const Notifications_1 = require("./Notifications");
+const Referral_1 = require("./Referral");
+const Investment_1 = require("./Investment");
+const Savings_1 = require("./Savings");
 let User = class User {
 };
 exports.User = User;
@@ -148,6 +151,18 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "nid_card_back_pic_url", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => Referral_1.Referral, (referral) => referral.used_by_user_id),
+    __metadata("design:type", Array)
+], User.prototype, "referrals", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => Investment_1.Investment, (investment) => investment.investor),
+    __metadata("design:type", Array)
+], User.prototype, "investments", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => Savings_1.Savings, (savings) => savings.user),
+    __metadata("design:type", Array)
+], User.prototype, "savings", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

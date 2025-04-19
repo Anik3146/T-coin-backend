@@ -13,7 +13,7 @@ export class TransactionHistory {
   transaction_type?: string; // Example: 'Deposit', 'Withdrawal', 'Reward', etc.
 
   @Column("decimal", { precision: 10, scale: 2 })
-  amount?: number;
+  amount?: number; //t-coin
 
   @Column()
   transaction_date?: Date;

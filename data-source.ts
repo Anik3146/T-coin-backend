@@ -13,6 +13,11 @@ import { Notification } from "./entities/Notifications";
 import { BreakingNews } from "./entities/BreakingNews";
 import { Agent } from "./entities/Agent";
 import { Admin } from "./entities/Admin";
+import { Savings } from "./entities/Savings";
+import { Investment } from "./entities/Investment";
+import { InvestmentProject } from "./entities/InvestmentProject";
+import { MFSService } from "./entities/MFSservice";
+import { Referral } from "./entities/Referral";
 
 // Add other entities as required
 dotenv.config();
@@ -36,6 +41,11 @@ export const AppDataSource = new DataSource({
     BreakingNews,
     Agent,
     Admin,
+    Savings,
+    Investment,
+    InvestmentProject,
+    MFSService,
+    Referral,
   ], // Include all entities
   synchronize: true,
   logging: true,
