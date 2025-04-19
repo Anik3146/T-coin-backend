@@ -84,9 +84,13 @@ router.post(
 router.put(
   "/:id",
   authenticateToken, // Assuming you have a token authentication middleware
-  upload.single("image"), // Only handle single file upload for 'image' field
+  upload.fields([
+    { name: "image", maxCount: 1 }, // Single image upload
+    { name: "nid_card_front", maxCount: 1 }, // Single NID card front image upload
+    { name: "nid_card_back", maxCount: 1 }, // Single NID card back image upload
+    { name: "passport", maxCount: 1 }, // Single passport file upload
+  ]),
   async (req: any, res: any) => {
-    // Using 'any' here, but you can type it more strictly if needed
     try {
       const { id } = req.params;
 
@@ -95,14 +99,15 @@ router.put(
         return res.status(403).json({ message: "Unauthorized access." });
       }
 
-      // Ensure req.file is properly typed as Multer file
-      const { file } = req;
-      if (file) {
-        // If file is uploaded, you can access it as `file.filename` or `file.path`
-        console.log("File uploaded:", file.filename);
+      // Handle files if they are uploaded
+      const { files } = req;
+
+      // Log file uploads for debugging purposes
+      if (files) {
+        console.log("Uploaded files:", files);
       }
 
-      // Call the updateUser function after multer has handled the file upload
+      // Call the updateUser function after multer has handled the file uploads
       await updateUser(req, res);
     } catch (error) {
       console.error("Error in updating user:", error);

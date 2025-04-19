@@ -80,9 +80,11 @@ const generateToken = (userId) => {
 };
 //sign in
 const signIn = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+    const { email, pin_number } = req.body;
+    if (!email || !pin_number) {
+        return res
+            .status(400)
+            .json({ message: "Email and pin number are required" });
     }
     try {
         const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
@@ -91,14 +93,14 @@ const signIn = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(404).json({ message: "User not found" });
         }
         // Check password
-        if (password && user.pin_number && typeof password === "string") {
-            const isPasswordValid = yield bcryptjs_1.default.compare(password, user.pin_number);
+        if (pin_number && user.pin_number && typeof pin_number === "string") {
+            const isPasswordValid = yield bcryptjs_1.default.compare(pin_number, user.pin_number);
             if (!isPasswordValid) {
-                return res.status(401).json({ message: "Invalid password" });
+                return res.status(401).json({ message: "Invalid pin_number" });
             }
         }
         else {
-            return res.status(400).json({ message: "Invalid password" });
+            return res.status(400).json({ message: "Invalid pin_number" });
         }
         const token = generateToken(user.id);
         // Remove password
@@ -187,28 +189,43 @@ const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // Handle uploaded images
         if (req.files) {
             const files = req.files;
-            if (files["image"]) {
-                const imageFile = files["image"][0];
-                newUser.image = `${constant_1.default}/uploads/${imageFile.filename}`; // Full URL for image
-            }
-            if (files["nid_card_front"]) {
-                const nidFrontPicFile = files["nid_card_front"][0];
-                newUser.nid_card_front_pic_url = `${constant_1.default}/uploads/${nidFrontPicFile.filename}`; // Full URL for NID front image
-            }
-            if (files["nid_card_back"]) {
-                const nidBackPicFile = files["nid_card_back"][0];
-                newUser.nid_card_back_pic_url = `${constant_1.default}/uploads/${nidBackPicFile.filename}`; // Full URL for NID back image
-            }
-            if (files["passport"]) {
-                const passportPdfFile = files["passport"][0];
-                newUser.passport_file_url = `${constant_1.default}/uploads/${passportPdfFile.filename}`; // Full URL for the passport PDF
+            // Handle uploaded images with unique filenames
+            if (req.files) {
+                const files = req.files;
+                if (files["image"]) {
+                    const imageFile = files["image"][0];
+                    const imageName = `${Date.now()}-image-${imageFile.originalname}`;
+                    newUser.image = `${constant_1.default}/uploads/${imageName}`;
+                    // Rename the uploaded image to ensure uniqueness
+                    fs_1.default.renameSync(imageFile.path, path_1.default.join(imageFile.destination, imageName));
+                }
+                if (files["nid_card_front"]) {
+                    const nidFrontPicFile = files["nid_card_front"][0];
+                    const nidFrontName = `${Date.now()}-nid_front-${nidFrontPicFile.originalname}`;
+                    newUser.nid_card_front_pic_url = `${constant_1.default}/uploads/${nidFrontName}`;
+                    // Rename the uploaded image to ensure uniqueness
+                    fs_1.default.renameSync(nidFrontPicFile.path, path_1.default.join(nidFrontPicFile.destination, nidFrontName));
+                }
+                if (files["nid_card_back"]) {
+                    const nidBackPicFile = files["nid_card_back"][0];
+                    const nidBackName = `${Date.now()}-nid_back-${nidBackPicFile.originalname}`;
+                    newUser.nid_card_back_pic_url = `${constant_1.default}/uploads/${nidBackName}`;
+                    // Rename the uploaded image to ensure uniqueness
+                    fs_1.default.renameSync(nidBackPicFile.path, path_1.default.join(nidBackPicFile.destination, nidBackName));
+                }
+                if (files["passport"]) {
+                    const passportPdfFile = files["passport"][0];
+                    const passportName = `${Date.now()}-passport-${passportPdfFile.originalname}`;
+                    newUser.passport_file_url = `${constant_1.default}/uploads/${passportName}`;
+                    // Rename the uploaded image to ensure uniqueness
+                    fs_1.default.renameSync(passportPdfFile.path, path_1.default.join(passportPdfFile.destination, passportName));
+                }
             }
         }
         // Save the user first to ensure the user.id is populated
         yield userRepo.save(newUser);
         // Now that the user is saved and `id` is available, generate the QR code URL
         const userUrl = `${constant_1.default}/users/${newUser.id}`;
-        // Resolve the path to the root folder using path.resolve
         // Use path.resolve to get the correct root directory
         const uploadsDir = path_1.default.resolve(__dirname, "../../uploads"); // Go back 2 directories to reach the root folder
         // Log the uploads directory for debugging purposes
@@ -249,7 +266,8 @@ exports.createUser = createUser;
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { id } = req.params;
-    const { full_name, pin_number, email, phone_no, accepted_terms, accepted_terms_time, city, country, state, zip_code, latitude, longitude, institution_name, birth_date, address, total_prize_money_received, } = req.body;
+    const { full_name, pin_number, email, phone_no, accepted_terms, accepted_terms_time, city, country, state, zip_code, latitude, longitude, institution_name, birth_date, address, tcoin_balance, tcoin_withdrawal, deviceToken, user_code, qr_code, passport_file_url, nid_card_number, nid_card_front_pic_url, nid_card_back_pic_url, } = req.body;
+    // Ensure the user can only update their own profile
     if (!id || parseInt(id) !== ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
         return res.status(400).json({
             success: false,
@@ -288,27 +306,109 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         user.institution_name = institution_name || user.institution_name;
         user.birth_date = birth_date ? new Date(birth_date) : user.birth_date;
         user.address = address || user.address;
-        user.tcoin_balance = total_prize_money_received || user.tcoin_balance;
-        // Update password if provided
+        user.tcoin_balance = tcoin_balance || user.tcoin_balance;
+        user.tcoin_withdrawal = tcoin_withdrawal || user.tcoin_withdrawal;
+        user.deviceToken = deviceToken || user.deviceToken;
+        user.user_code = user_code || user.user_code;
+        user.qr_code = qr_code || user.qr_code;
+        user.passport_file_url = passport_file_url || user.passport_file_url;
+        user.nid_card_number = nid_card_number || user.nid_card_number;
+        user.nid_card_front_pic_url =
+            nid_card_front_pic_url || user.nid_card_front_pic_url;
+        user.nid_card_back_pic_url =
+            nid_card_back_pic_url || user.nid_card_back_pic_url;
+        // Update password (pin_number) if provided
         if (pin_number) {
             user.pin_number = yield bcryptjs_1.default.hash(pin_number, 10);
         }
-        // Handle image upload if a new image was sent
-        if (req.file) {
-            // Save the full image URL in the database
-            user.image = req.file.filename;
+        // Handle image upload if new images were sent
+        if (req.files) {
+            const files = req.files;
+            // Handle user image upload (delete previous image if exists)
+            if (files["image"]) {
+                if (user.image) {
+                    const oldImagePath = path_1.default.resolve(__dirname, `../../uploads/${user.image.split("/").pop()}`);
+                    console.log("Deleting old image:", oldImagePath); // Debug log for old image path
+                    if (fs_1.default.existsSync(oldImagePath)) {
+                        fs_1.default.unlinkSync(oldImagePath);
+                        console.log("Old image deleted successfully");
+                    }
+                    else {
+                        console.log("Old image not found:", oldImagePath); // Debug log if file is not found
+                    }
+                }
+                const imageFile = files["image"][0];
+                const imageName = `${Date.now()}-image-${imageFile.originalname}`;
+                user.image = `${constant_1.default}/uploads/${imageName}`;
+                // Rename the uploaded image to ensure uniqueness
+                fs_1.default.renameSync(imageFile.path, path_1.default.join(imageFile.destination, imageName));
+            }
+            // Handle NID card front image upload (delete previous if exists)
+            if (files["nid_card_front"]) {
+                if (user.nid_card_front_pic_url) {
+                    const oldNidFrontPicPath = path_1.default.resolve(__dirname, `../../uploads/${user.nid_card_front_pic_url.split("/").pop()}`);
+                    console.log("Deleting old NID front image:", oldNidFrontPicPath); // Debug log for old NID front image
+                    if (fs_1.default.existsSync(oldNidFrontPicPath)) {
+                        fs_1.default.unlinkSync(oldNidFrontPicPath);
+                        console.log("Old NID front image deleted successfully");
+                    }
+                    else {
+                        console.log("Old NID front image not found:", oldNidFrontPicPath); // Debug log if file is not found
+                    }
+                }
+                const nidFrontPicFile = files["nid_card_front"][0];
+                const nidFrontName = `${Date.now()}-nid_front-${nidFrontPicFile.originalname}`;
+                user.nid_card_front_pic_url = `${constant_1.default}/uploads/${nidFrontName}`;
+                // Rename the uploaded image to ensure uniqueness
+                fs_1.default.renameSync(nidFrontPicFile.path, path_1.default.join(nidFrontPicFile.destination, nidFrontName));
+            }
+            // Handle NID card back image upload (delete previous if exists)
+            if (files["nid_card_back"]) {
+                if (user.nid_card_back_pic_url) {
+                    const oldNidBackPicPath = path_1.default.resolve(__dirname, `../../uploads/${user.nid_card_back_pic_url.split("/").pop()}`);
+                    console.log("Deleting old NID back image:", oldNidBackPicPath); // Debug log for old NID back image
+                    if (fs_1.default.existsSync(oldNidBackPicPath)) {
+                        fs_1.default.unlinkSync(oldNidBackPicPath);
+                        console.log("Old NID back image deleted successfully");
+                    }
+                    else {
+                        console.log("Old NID back image not found:", oldNidBackPicPath); // Debug log if file is not found
+                    }
+                }
+                const nidBackPicFile = files["nid_card_back"][0];
+                const nidBackName = `${Date.now()}-nid_back-${nidBackPicFile.originalname}`;
+                user.nid_card_back_pic_url = `${constant_1.default}/uploads/${nidBackName}`;
+                // Rename the uploaded image to ensure uniqueness
+                fs_1.default.renameSync(nidBackPicFile.path, path_1.default.join(nidBackPicFile.destination, nidBackName));
+            }
+            // Handle passport file upload (delete previous if exists)
+            if (files["passport"]) {
+                if (user.passport_file_url) {
+                    const oldPassportPath = path_1.default.resolve(__dirname, `../../uploads/${user.passport_file_url.split("/").pop()}`);
+                    console.log("Deleting old passport file:", oldPassportPath); // Debug log for old passport file
+                    if (fs_1.default.existsSync(oldPassportPath)) {
+                        fs_1.default.unlinkSync(oldPassportPath);
+                        console.log("Old passport file deleted successfully");
+                    }
+                    else {
+                        console.log("Old passport file not found:", oldPassportPath); // Debug log if file is not found
+                    }
+                }
+                const passportPdfFile = files["passport"][0];
+                const passportName = `${Date.now()}-passport-${passportPdfFile.originalname}`;
+                user.passport_file_url = `${constant_1.default}/uploads/${passportName}`;
+                // Rename the uploaded image to ensure uniqueness
+                fs_1.default.renameSync(passportPdfFile.path, path_1.default.join(passportPdfFile.destination, passportName));
+            }
         }
+        // Save updated user to the database
         const updatedUser = yield userRepo.save(user);
-        // Generate full image URL
-        const imagePath = updatedUser.image
-            ? `${constant_1.default}/uploads/${updatedUser.image}`
-            : null;
-        // Exclude password before returning
+        // Exclude the password field before returning
         const { pin_number: _ } = updatedUser, userWithoutPassword = __rest(updatedUser, ["pin_number"]);
         return res.status(200).json({
             success: true,
             message: "User updated successfully",
-            data: Object.assign(Object.assign({}, userWithoutPassword), { image: imagePath }),
+            data: Object.assign(Object.assign({}, userWithoutPassword), { image: updatedUser.image, nid_card_front_pic_url: updatedUser.nid_card_front_pic_url, nid_card_back_pic_url: updatedUser.nid_card_back_pic_url, passport_file_url: updatedUser.passport_file_url }),
         });
     }
     catch (error) {

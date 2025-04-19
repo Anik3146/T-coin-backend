@@ -77,22 +77,25 @@ router.post("/with-multiple-files", MulterConfig_1.upload.fields([
 }));
 // Update User route
 router.put("/:id", Authentication_1.authenticateToken, // Assuming you have a token authentication middleware
-MulterConfig_1.upload.single("image"), // Only handle single file upload for 'image' field
-(req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // Using 'any' here, but you can type it more strictly if needed
+MulterConfig_1.upload.fields([
+    { name: "image", maxCount: 1 }, // Single image upload
+    { name: "nid_card_front", maxCount: 1 }, // Single NID card front image upload
+    { name: "nid_card_back", maxCount: 1 }, // Single NID card back image upload
+    { name: "passport", maxCount: 1 }, // Single passport file upload
+]), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Ensure the logged-in user is the same as the user being updated
         if (Number(id) !== req.user.id) {
             return res.status(403).json({ message: "Unauthorized access." });
         }
-        // Ensure req.file is properly typed as Multer file
-        const { file } = req;
-        if (file) {
-            // If file is uploaded, you can access it as `file.filename` or `file.path`
-            console.log("File uploaded:", file.filename);
+        // Handle files if they are uploaded
+        const { files } = req;
+        // Log file uploads for debugging purposes
+        if (files) {
+            console.log("Uploaded files:", files);
         }
-        // Call the updateUser function after multer has handled the file upload
+        // Call the updateUser function after multer has handled the file uploads
         yield (0, UserController_1.updateUser)(req, res);
     }
     catch (error) {
