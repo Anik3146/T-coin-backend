@@ -18,6 +18,9 @@ export class TransactionHistory {
   @Column()
   transaction_date?: Date;
 
+  @Column("decimal", { precision: 10, scale: 2, nullable: true })
+  local_currency_amount?: number; // Local currency equivalent
+
   @Column()
   transaction_status?: string; // Example: 'Completed', 'Pending', 'Failed'
 

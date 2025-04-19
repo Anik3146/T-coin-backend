@@ -36,6 +36,10 @@ __decorate([
     __metadata("design:type", Date)
 ], TransactionHistory.prototype, "transaction_date", void 0);
 __decorate([
+    (0, typeorm_1.Column)("decimal", { precision: 10, scale: 2, nullable: true }),
+    __metadata("design:type", Number)
+], TransactionHistory.prototype, "local_currency_amount", void 0);
+__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], TransactionHistory.prototype, "transaction_status", void 0);

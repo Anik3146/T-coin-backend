@@ -118,6 +118,10 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)("decimal", { precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
+], User.prototype, "local_currency_balance", void 0);
+__decorate([
+    (0, typeorm_1.Column)("decimal", { precision: 10, scale: 2, nullable: true }),
+    __metadata("design:type", Number)
 ], User.prototype, "tcoin_withdrawal", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),

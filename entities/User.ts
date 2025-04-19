@@ -95,6 +95,10 @@ export class User {
   @Column("decimal", { precision: 10, scale: 2, nullable: true })
   tcoin_balance?: number; // T-Coin balance (replaces prize money)
 
+  // Add this property to User if all types of users should have it
+  @Column("decimal", { precision: 10, scale: 2, nullable: true })
+  local_currency_balance?: number; // Local currency balance for exchange
+
   @Column("decimal", { precision: 10, scale: 2, nullable: true })
   tcoin_withdrawal?: number; // T-Coin withdrawal amount (replaces withdrawal)
 
