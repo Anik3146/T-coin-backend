@@ -11,6 +11,8 @@ import { TransactionHistory } from "./entities/TransactionHistory";
 import { User } from "./entities/User";
 import { Notification } from "./entities/Notifications";
 import { BreakingNews } from "./entities/BreakingNews";
+import { Agent } from "./entities/Agent";
+import { Admin } from "./entities/Admin";
 
 // Add other entities as required
 dotenv.config();
@@ -32,6 +34,8 @@ export const AppDataSource = new DataSource({
     User,
     Notification,
     BreakingNews,
+    Agent,
+    Admin,
   ], // Include all entities
   synchronize: true,
   logging: true,

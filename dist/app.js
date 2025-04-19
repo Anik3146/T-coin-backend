@@ -14,6 +14,8 @@ const BannerRoutes_1 = __importDefault(require("./routes/BannerRoutes"));
 const activityLogRoutes_1 = __importDefault(require("./routes/activityLogRoutes"));
 const TransactionHistoryRoutes_1 = __importDefault(require("./routes/TransactionHistoryRoutes"));
 const BreakingNewsRoutes_1 = __importDefault(require("./routes/BreakingNewsRoutes"));
+const agentRoutes_1 = __importDefault(require("./routes/agentRoutes"));
+const adminRoutes_1 = __importDefault(require("./routes/adminRoutes"));
 const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
@@ -29,6 +31,8 @@ data_source_1.AppDataSource.initialize()
 });
 // Use the routes
 app.use("/api/users", UserRoutes_1.default);
+app.use("/api/agents", agentRoutes_1.default);
+app.use("/api/admins", adminRoutes_1.default);
 app.use("/api/notifications", NotificationRouter_1.default);
 app.use("/api/contact-us", ContactUsRouter_1.default);
 app.use("/api/social-media", SocialMediaRoutes_1.default);

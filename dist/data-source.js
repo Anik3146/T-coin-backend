@@ -47,6 +47,8 @@ const TransactionHistory_1 = require("./entities/TransactionHistory");
 const User_1 = require("./entities/User");
 const Notifications_1 = require("./entities/Notifications");
 const BreakingNews_1 = require("./entities/BreakingNews");
+const Agent_1 = require("./entities/Agent");
+const Admin_1 = require("./entities/Admin");
 // Add other entities as required
 dotenv.config();
 exports.AppDataSource = new typeorm_1.DataSource({
@@ -67,6 +69,8 @@ exports.AppDataSource = new typeorm_1.DataSource({
         User_1.User,
         Notifications_1.Notification,
         BreakingNews_1.BreakingNews,
+        Agent_1.Agent,
+        Admin_1.Admin,
     ], // Include all entities
     synchronize: true,
     logging: true,

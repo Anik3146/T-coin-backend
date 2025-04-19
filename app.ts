@@ -9,6 +9,8 @@ import bannerRoutes from "./routes/BannerRoutes";
 import activityLogRoutes from "./routes/activityLogRoutes";
 import transactionHistoryRoutes from "./routes/TransactionHistoryRoutes";
 import breakingNewsRoutes from "./routes/BreakingNewsRoutes";
+import agentRoutes from "./routes/agentRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 import cors from "cors";
 import path from "path";
@@ -28,6 +30,8 @@ AppDataSource.initialize()
 
 // Use the routes
 app.use("/api/users", userRoutes);
+app.use("/api/agents", agentRoutes);
+app.use("/api/admins", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/contact-us", contactUsRouters);
 app.use("/api/social-media", socialMediaRoutes);
