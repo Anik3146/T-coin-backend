@@ -75,8 +75,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Replace w
 //   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "1h" });
 // };
 // Remove expiresIn to create a token that doesn't expire (not recommended for production)
-const generateToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ id: userId }, JWT_SECRET); // No expiresIn
+const generateToken = (userId, role = "user") => {
+    return jsonwebtoken_1.default.sign({ id: userId, role }, JWT_SECRET); // No expiresIn
 };
 //sign in
 const signIn = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

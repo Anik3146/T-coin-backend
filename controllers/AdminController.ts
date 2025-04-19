@@ -21,8 +21,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Replace w
 // };
 
 // Remove expiresIn to create a token that doesn't expire (not recommended for production)
-const generateToken = (userId: number) => {
-  return jwt.sign({ id: userId }, JWT_SECRET); // No expiresIn
+const generateToken = (userId: number, role: string = "admin") => {
+  return jwt.sign({ id: userId, role }, JWT_SECRET); // No expiresIn
 };
 
 //sign in

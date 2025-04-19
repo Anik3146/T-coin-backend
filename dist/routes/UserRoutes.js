@@ -20,6 +20,7 @@ const DeviceInfoController_1 = require("../controllers/DeviceInfoController");
 const ActivityLogController_1 = require("../controllers/ActivityLogController");
 const ContactUsController_1 = require("../controllers/ContactUsController");
 const MulterConfig_1 = require("../middleware/MulterConfig");
+const roleAuthorization_1 = require("../middleware/roleAuthorization");
 const router = express_1.default.Router();
 // Sign In route
 router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -77,7 +78,7 @@ router.post("/with-multiple-files", MulterConfig_1.upload.fields([
 }));
 // Update User route
 router.put("/:id", Authentication_1.authenticateToken, // Assuming you have a token authentication middleware
-MulterConfig_1.upload.fields([
+(0, roleAuthorization_1.authorizeRoles)("user"), MulterConfig_1.upload.fields([
     { name: "image", maxCount: 1 }, // Single image upload
     { name: "nid_card_front", maxCount: 1 }, // Single NID card front image upload
     { name: "nid_card_back", maxCount: 1 }, // Single NID card back image upload
@@ -104,7 +105,7 @@ MulterConfig_1.upload.fields([
     }
 }));
 // Get all users route
-router.get("/", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield (0, UserController_1.getUsers)(req, res);
     }
@@ -114,7 +115,7 @@ router.get("/", Authentication_1.authenticateToken, (req, res) => __awaiter(void
     }
 }));
 // Get user by ID route
-router.get("/:id", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/:id", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Ensure the logged-in user is the same as the user being accessed
@@ -129,7 +130,7 @@ router.get("/:id", Authentication_1.authenticateToken, (req, res) => __awaiter(v
     }
 }));
 // Delete User route
-router.delete("/:id", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.delete("/:id", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
         // Ensure the logged-in user is the same as the user being deleted
@@ -144,7 +145,7 @@ router.delete("/:id", Authentication_1.authenticateToken, (req, res) => __awaite
     }
 }));
 // Add or Update App Info for a User
-router.put("/:userId/appinfo", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put("/:userId/appinfo", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params;
         // Ensure the logged-in user is the same as the user whose app info is being modified
@@ -159,7 +160,7 @@ router.put("/:userId/appinfo", Authentication_1.authenticateToken, (req, res) =>
     }
 }));
 // Add or Update Device Info for a User
-router.put("/:userId/deviceinfo", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put("/:userId/deviceinfo", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params;
         // Ensure the logged-in user is the same as the user whose device info is being modified
@@ -176,7 +177,7 @@ router.put("/:userId/deviceinfo", Authentication_1.authenticateToken, (req, res)
 // Add a route for posting activity log
 router.post("/:userId/activity-log", // URL pattern where userId is a URL parameter
 Authentication_1.authenticateToken, // Ensure the user is authenticated
-(req, res) => __awaiter(void 0, void 0, void 0, function* () {
+(0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params;
         // Ensure the logged-in user is the same as the user whose activity log is being posted
@@ -191,7 +192,7 @@ Authentication_1.authenticateToken, // Ensure the user is authenticated
     }
 }));
 // Add the route for posting a Contact Us message
-router.post("/:userId/contact-us", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/:userId/contact-us", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params; // Extract userId from route parameters
         // console.log(userId);
@@ -210,7 +211,7 @@ router.post("/:userId/contact-us", Authentication_1.authenticateToken, (req, res
 // API Route for fetching the balance of a user
 router.get("/:userId/balance", // Route for fetching the balance for a user
 Authentication_1.authenticateToken, // Ensure the user is authenticated
-(req, res) => __awaiter(void 0, void 0, void 0, function* () {
+(0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params; // Extract userId from the route parameters
         // Ensure that the logged-in user matches the userId from the route
@@ -226,7 +227,7 @@ Authentication_1.authenticateToken, // Ensure the user is authenticated
     }
 }));
 // **New Route** to mark a notification as read by its ID
-router.put("/:userId/notifications/:notificationId/read", Authentication_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put("/:userId/notifications/:notificationId/read", Authentication_1.authenticateToken, (0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params;
         const { user_id } = req.body;
@@ -250,7 +251,7 @@ router.put("/:userId/notifications/:notificationId/read", Authentication_1.authe
 }));
 // **New Route** for a user to withdraw money (Create Pending Transaction)
 router.post("/:userId/withdraw", Authentication_1.authenticateToken, // Authentication middleware
-(req, res) => __awaiter(void 0, void 0, void 0, function* () {
+(0, roleAuthorization_1.authorizeRoles)("user"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { userId } = req.params;
         const { user_id, amount } = req.body;

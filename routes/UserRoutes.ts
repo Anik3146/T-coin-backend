@@ -17,6 +17,7 @@ import { addOrUpdateDeviceInfoForUser } from "../controllers/DeviceInfoControlle
 import { addActivityLog } from "../controllers/ActivityLogController";
 import { createContactUsMessage } from "../controllers/ContactUsController";
 import { upload } from "../middleware/MulterConfig";
+import { authorizeRoles } from "../middleware/roleAuthorization";
 
 const router = express.Router();
 
@@ -84,6 +85,7 @@ router.post(
 router.put(
   "/:id",
   authenticateToken, // Assuming you have a token authentication middleware
+  authorizeRoles("user"),
   upload.fields([
     { name: "image", maxCount: 1 }, // Single image upload
     { name: "nid_card_front", maxCount: 1 }, // Single NID card front image upload
@@ -117,7 +119,7 @@ router.put(
 );
 
 // Get all users route
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, authorizeRoles("user"), async (req, res) => {
   try {
     await getUsers(req, res);
   } catch (error) {
@@ -127,43 +129,54 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // Get user by ID route
-router.get("/:id", authenticateToken, async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
+router.get(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("user"),
+  async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
 
-    // Ensure the logged-in user is the same as the user being accessed
-    if (Number(id) !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized access." });
+      // Ensure the logged-in user is the same as the user being accessed
+      if (Number(id) !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized access." });
+      }
+
+      await getUserById(req, res);
+    } catch (error) {
+      console.error("Error in fetching user by ID:", error);
+      res.status(500).json({ message: "An unexpected error occurred." });
     }
-
-    await getUserById(req, res);
-  } catch (error) {
-    console.error("Error in fetching user by ID:", error);
-    res.status(500).json({ message: "An unexpected error occurred." });
   }
-});
+);
 
 // Delete User route
-router.delete("/:id", authenticateToken, async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("user"),
+  async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
 
-    // Ensure the logged-in user is the same as the user being deleted
-    if (Number(id) !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized access." });
+      // Ensure the logged-in user is the same as the user being deleted
+      if (Number(id) !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized access." });
+      }
+
+      await deleteUser(req, res);
+    } catch (error) {
+      console.error("Error in deleting user:", error);
+      res.status(500).json({ message: "An unexpected error occurred." });
     }
-
-    await deleteUser(req, res);
-  } catch (error) {
-    console.error("Error in deleting user:", error);
-    res.status(500).json({ message: "An unexpected error occurred." });
   }
-});
+);
 
 // Add or Update App Info for a User
 router.put(
   "/:userId/appinfo",
   authenticateToken,
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;
@@ -185,6 +198,7 @@ router.put(
 router.put(
   "/:userId/deviceinfo",
   authenticateToken,
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;
@@ -206,6 +220,7 @@ router.put(
 router.post(
   "/:userId/activity-log", // URL pattern where userId is a URL parameter
   authenticateToken, // Ensure the user is authenticated
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;
@@ -227,6 +242,7 @@ router.post(
 router.post(
   "/:userId/contact-us",
   authenticateToken,
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params; // Extract userId from route parameters
@@ -249,6 +265,7 @@ router.post(
 router.get(
   "/:userId/balance", // Route for fetching the balance for a user
   authenticateToken, // Ensure the user is authenticated
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params; // Extract userId from the route parameters
@@ -271,6 +288,7 @@ router.get(
 router.put(
   "/:userId/notifications/:notificationId/read",
   authenticateToken,
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;
@@ -299,6 +317,7 @@ router.put(
 router.post(
   "/:userId/withdraw",
   authenticateToken, // Authentication middleware
+  authorizeRoles("user"),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;
